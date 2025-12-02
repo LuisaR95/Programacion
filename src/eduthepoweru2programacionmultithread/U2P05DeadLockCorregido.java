@@ -1,6 +1,6 @@
 package eduthepoweru2programacionmultithread;
 
-public class U2P05DeadLockCorregido {
+public class   U2P05DeadLockCorregido {
     // Dos objetos que usaremos como bloqueos (locks)
     private static final Object obj1 = new Object();
     private static final Object obj2 = new Object();
