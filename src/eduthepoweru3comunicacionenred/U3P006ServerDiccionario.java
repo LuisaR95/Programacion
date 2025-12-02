@@ -32,6 +32,7 @@ public class U3P006ServerDiccionario {
             String comando;
             String respuesta;
 
+            pw.println("Conexión con el Servidor Diccionario establecida. Bienvenido.");
             while ((comando = br.readLine()) != null) {
 
                 String[] partes = comando.split("\\s+", 3);
