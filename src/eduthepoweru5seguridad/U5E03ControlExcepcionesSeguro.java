@@ -41,6 +41,9 @@ public class U5E03ControlExcepcionesSeguro {
         } catch (IOException e) {
             System.err.println("ERROR [ERR_ES]: No se pudo acceder al recurso solicitado.");
             LOG.log(Level.WARNING, "Error técnico en opción " + option + ": " + e.getMessage());
+        } catch (RuntimeException e) {
+            System.err.println("ERROR [ERR_UNKNOWN]: error desconocido" );
+            LOG.log(Level.SEVERE, "Error inesperado en la ejecución " + option + ": " + e.getMessage(),e);
         } finally {
             sc.close();
         }
@@ -75,7 +78,7 @@ public class U5E03ControlExcepcionesSeguro {
             respuesta = "JSON validado correctamente";
 
         } else if (option == 3) {
-            throw new IOException("Fallo de red en puerto 5432");
+            throw new IOException("Fallo de red");
 
         } else {
             throw new IllegalArgumentException("Opción fuera de rango (1-3)");
