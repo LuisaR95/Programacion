@@ -1,4 +1,4 @@
-package edu.thepower.u5seguridad;
+package eduthepoweru5seguridad;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,25 +7,33 @@ import java.util.Scanner;
 
 public class U5E04AutenticacionAutorizacionSeguro {
 
-    enum Rol { USER, ADMIN }
+    enum Rol {
+        USER, ADMIN
+    }
 
     static class User {
         private static final Random RANDOM = new Random();
-
         String username;
         int passwordValue;
         int salt;
-        Rol role;
+        Rol rol;          // "ADMIN" o "USER"
+        boolean blocked;
+        int contador = 0;
+        boolean bloqueado;
+        int intentosFallidos;
 
-        public User(String username, String password, Rol role) {
+        public User(String username, String password, Rol rol) {
             this.username = username;
-            this.role = role;
+            this.rol = rol;
             this.salt = getSalt();
             this.passwordValue = getPasswordValue(password, salt);
+            this.blocked = false;
+            this.bloqueado = false;
+            this.intentosFallidos = 0;
         }
 
         private static int getSalt() {
-            return RANDOM.nextInt(1000);
+            return RANDOM.nextInt(10_000);
         }
 
         private static int getPasswordValue(String password, int salt) {
@@ -35,21 +43,22 @@ public class U5E04AutenticacionAutorizacionSeguro {
         private boolean checkPassword(String password) {
             return passwordValue == getPasswordValue(password, salt);
         }
-    }
-
-    // clase inner
-    static class Sesion {
-        String username;
-        Rol role;
-
-        public Sesion(String username, Rol role) {
-            this.username = username;
-            this.role = role;
+        public int incrementarIntententos(){
+            return ++incrementarIntententos();
         }
     }
 
-    public static class AutenticacionYValidacion {
+    static class Sesion {
+        String username;
+        Rol rol;
 
+        public Sesion(String username, Rol rol) {
+            this.username = username;
+            this.rol = rol;
+        }
+    }
+
+    static class AutenticacionYValidacion {
         private final String CREDENCIALES_INCORRECTAS = "Credenciales incorrectas";
         Map<String, User> users;
 
@@ -58,75 +67,95 @@ public class U5E04AutenticacionAutorizacionSeguro {
         }
 
         public Sesion login(String username, String password) {
+            final int MAX_INTENTOS = 2;
             Sesion sesion = null;
             User user = users.get(username);
-
-            if (user != null && user.checkPassword(password)) {
-                sesion = new Sesion(username, user.role);
+            if (user != null) {
+                // validar si el usuario esta bloqueado
+                if (!user.bloqueado) {
+                    if (user.checkPassword(password)) {
+                        sesion = new Sesion(username, user.rol);
+                        user.intentosFallidos = 0;
+                    } else {
+                        user.incrementarIntententos();
+                        if (user.incrementarIntententos() > MAX_INTENTOS) {
+                            user.bloqueado = true;
+                            System.out.println("Usuario ha sido bloqueado por número de intentos superados");
+                        }
+                        System.out.println(CREDENCIALES_INCORRECTAS);
+                    }
+                } else{
+                    System.out.println("El usuario esta bloqueado. Contacta con un administrador");
+                }
             } else {
                 System.out.println(CREDENCIALES_INCORRECTAS);
             }
-
             return sesion;
         }
 
         public boolean validarPermisos(Sesion sesion, Rol rolRequerido) {
-            boolean permitido = false;
-
-            if (sesion != null) {
-                if (sesion.role == Rol.ADMIN) {
-                    permitido = true;
-                } else if (sesion.role == rolRequerido) {
-                    permitido = true;
-                }
+            boolean validado = false;
+            if (rolRequerido.equals(Rol.USER)) {
+                validado = true;
+            } else {
+                validado = sesion.rol.equals(Rol.ADMIN);
             }
-
-            return permitido;
+            return validado;
         }
     }
+
 
     public static void main(String[] args) {
 
         Map<String, User> users = new HashMap<>();
+
         users.put("admin", new User("admin", "Admin123!", Rol.ADMIN));
         users.put("ana", new User("ana", "Ana123!!aa", Rol.USER));
 
-        AutenticacionYValidacion autenticacion = new AutenticacionYValidacion(users);
         Scanner sc = new Scanner(System.in);
+
+        AutenticacionYValidacion autenticacion = new AutenticacionYValidacion(users);
 
         Sesion sesion = null;
 
-        System.out.println("=== CE4 SEGURO: Login + Roles ===");
+        System.out.println("=== U5E04 SEGURO: Login + Roles ===");
 
         while (sesion == null) {
             System.out.print("Usuario: ");
+
             String u = sc.nextLine();
 
             System.out.print("Password: ");
+
             String p = sc.nextLine();
 
             sesion = autenticacion.login(u, p);
         }
 
-        System.out.println("Login OK. Rol=" + sesion.role);
+
+        System.out.println("Login OK. Rol=" + sesion.rol);
 
         System.out.println("1) Ver perfil");
-        System.out.println("2) Ver lista de usuarios (ADMIN)");
-        System.out.println("3) Apagar servicio (ADMIN)");
+
+        System.out.println("2) Ver lista de usuarios (debería ser ADMIN)");
+
+        System.out.println("3) Apagar servicio (debería ser ADMIN)");
+
         System.out.print("> ");
 
         try {
             int opt = Integer.parseInt(sc.nextLine());
 
             if (opt == 1) {
-                System.out.println("Perfil de " + sesion.username + " (rol=" + sesion.role + ")");
+
+                System.out.println("Perfil de " + sesion.username + " (rol=" + sesion.rol + ")");
 
             } else if (opt == 2) {
 
                 if (autenticacion.validarPermisos(sesion, Rol.ADMIN)) {
                     System.out.println("Usuarios: " + users.keySet());
                 } else {
-                    System.err.println("No tienes permisos");
+                    System.out.println("No tienes los permisos para ejecutar esta operación");
                 }
 
             } else if (opt == 3) {
@@ -134,17 +163,17 @@ public class U5E04AutenticacionAutorizacionSeguro {
                 if (autenticacion.validarPermisos(sesion, Rol.ADMIN)) {
                     System.out.println("Servicio apagado (simulado).");
                 } else {
-                    System.err.println("No tienes permisos");
+                    System.out.println("No tienes los permisos para ejecutar esta operación");
                 }
 
             } else {
+
                 System.out.println("Opción inválida.");
+
             }
-
         } catch (NumberFormatException e) {
-            System.err.println("Opción numérica inválida");
+            System.out.println("Opción no valida");
         }
-
         sc.close();
     }
 }
