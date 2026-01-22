@@ -13,10 +13,11 @@ public class U5E04AutenticacionAutorizacionSeguro {
 
     static class User {
         private static final Random RANDOM = new Random();
+
         String username;
         int passwordValue;
         int salt;
-        Rol rol;          // "ADMIN" o "USER"
+        Rol rol;          // ADMIN o USER
         boolean blocked;
         int contador = 0;
         boolean bloqueado;
@@ -43,8 +44,9 @@ public class U5E04AutenticacionAutorizacionSeguro {
         private boolean checkPassword(String password) {
             return passwordValue == getPasswordValue(password, salt);
         }
-        public int incrementarIntententos(){
-            return ++incrementarIntententos();
+
+        public int incrementarIntententos() {
+            return ++contador;
         }
     }
 
@@ -70,21 +72,21 @@ public class U5E04AutenticacionAutorizacionSeguro {
             final int MAX_INTENTOS = 2;
             Sesion sesion = null;
             User user = users.get(username);
+
             if (user != null) {
-                // validar si el usuario esta bloqueado
                 if (!user.bloqueado) {
                     if (user.checkPassword(password)) {
                         sesion = new Sesion(username, user.rol);
-                        user.intentosFallidos = 0;
+                        user.contador = 0;
                     } else {
-                        user.incrementarIntententos();
-                        if (user.incrementarIntententos() > MAX_INTENTOS) {
+                        int intentos = user.incrementarIntententos();
+                        if (intentos > MAX_INTENTOS) {
                             user.bloqueado = true;
                             System.out.println("Usuario ha sido bloqueado por número de intentos superados");
                         }
                         System.out.println(CREDENCIALES_INCORRECTAS);
                     }
-                } else{
+                } else {
                     System.out.println("El usuario esta bloqueado. Contacta con un administrador");
                 }
             } else {
@@ -94,7 +96,7 @@ public class U5E04AutenticacionAutorizacionSeguro {
         }
 
         public boolean validarPermisos(Sesion sesion, Rol rolRequerido) {
-            boolean validado = false;
+            boolean validado;
             if (rolRequerido.equals(Rol.USER)) {
                 validado = true;
             } else {
@@ -103,7 +105,6 @@ public class U5E04AutenticacionAutorizacionSeguro {
             return validado;
         }
     }
-
 
     public static void main(String[] args) {
 
@@ -122,58 +123,45 @@ public class U5E04AutenticacionAutorizacionSeguro {
 
         while (sesion == null) {
             System.out.print("Usuario: ");
-
             String u = sc.nextLine();
 
             System.out.print("Password: ");
-
             String p = sc.nextLine();
 
             sesion = autenticacion.login(u, p);
         }
 
-
         System.out.println("Login OK. Rol=" + sesion.rol);
 
         System.out.println("1) Ver perfil");
-
         System.out.println("2) Ver lista de usuarios (debería ser ADMIN)");
-
         System.out.println("3) Apagar servicio (debería ser ADMIN)");
-
         System.out.print("> ");
 
         try {
             int opt = Integer.parseInt(sc.nextLine());
 
             if (opt == 1) {
-
                 System.out.println("Perfil de " + sesion.username + " (rol=" + sesion.rol + ")");
-
             } else if (opt == 2) {
-
                 if (autenticacion.validarPermisos(sesion, Rol.ADMIN)) {
                     System.out.println("Usuarios: " + users.keySet());
                 } else {
                     System.out.println("No tienes los permisos para ejecutar esta operación");
                 }
-
             } else if (opt == 3) {
-
                 if (autenticacion.validarPermisos(sesion, Rol.ADMIN)) {
                     System.out.println("Servicio apagado (simulado).");
                 } else {
                     System.out.println("No tienes los permisos para ejecutar esta operación");
                 }
-
             } else {
-
                 System.out.println("Opción inválida.");
-
             }
         } catch (NumberFormatException e) {
             System.out.println("Opción no valida");
         }
+
         sc.close();
     }
 }
